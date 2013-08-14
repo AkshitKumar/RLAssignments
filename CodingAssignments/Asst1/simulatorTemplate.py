@@ -18,6 +18,7 @@ class SimulatorTemplate:
     }
     self.avg_reward = list()
     self.avg_optimality = list()
+    self.num_steps = {str(i) : 0 for i in range(const.NUM_GAMES)} 
 
   def getBestArm(self, j):
     try:
@@ -30,6 +31,7 @@ class SimulatorTemplate:
       tmp_avg_reward = 0.0
       tmp_avg_optimality = 0
       for j in range(const.NUM_GAMES):
+        self.num_steps[str(j)] += 1
         arm_to_play = self.getBestArm(str(j))
 
         actual_reward = self.q_val[str(j)][arm_to_play]
