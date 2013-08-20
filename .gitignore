@@ -8,6 +8,7 @@ bin/
 *.o
 *.so
 *~
+*.png
 web/settings.py
 .project
 .classpath
