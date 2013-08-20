@@ -13,3 +13,4 @@ web/settings.py
 .project
 .classpath
 .settings/
+Graphs/
