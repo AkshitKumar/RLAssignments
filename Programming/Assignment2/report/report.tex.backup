@@ -1,0 +1,247 @@
+\documentclass[a4paper,10pt]{report}
+
+\usepackage[utf8]{inputenc}
+\usepackage{array, xcolor, booktabs}
+\usepackage{tikz, listings, longtable}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{changepage}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage{relsize}
+
+%
+% this makes list spacing much better.
+%
+\newenvironment{my_itemize}{
+\begin{itemize}
+  \setlength{\itemsep}{1pt}
+  \setlength{\parskip}{0pt}
+  \setlength{\parsep}{0pt}}{
+\end{itemize}}
+
+\newcommand{\footnoteremember}[2]{
+\footnote{#2}
+\newcounter{#1}
+\setcounter{#1}{\value{footnote}}
+}
+\newcommand{\footnoterecall}[1]{
+\footnotemark[\value{#1}]
+}
+
+\newcommand\VRule[1][\arrayrulewidth]{\vrule width #1}
+\newcommand*{\myalign}[2]{\multicolumn{1}{#1}{#2}}
+\newcommand\Colorhref[3][blue]{\href{#2}{\small\color{#1}#3}}
+\newcommand{\BigO}[1]{\ensuremath{\operatorname{O}\bigl(#1\bigr)}}
+
+\makeatletter
+\def\@makechapterhead#1{%
+  \vspace*{10\p@}%
+  {\parindent \z@ \raggedright \normalfont
+    %\ifnum \c@secnumdepth >\m@ne
+    %    \huge\bfseries \@chapapp\space \thechapter
+    %    \par\nobreak
+    %    \vskip 20\p@
+    %\fi
+    \interlinepenalty\@M
+    \Huge \bfseries #1\par\nobreak
+    \vskip 15\p@
+  }}
+  \makeatother
+
+\def\codefont{
+  \fontsize{9pt}{11pt}\selectfont}
+\definecolor{codebgcolor}{HTML}{EDEDED}
+\newenvironment{code}
+{\begin{center}
+    \begin{tikzpicture}
+      \node [fill=codebgcolor,rounded corners=5pt]
+      \bgroup
+      \bgroup\codefont
+      \begin{tabular}{l}}
+      {\end{tabular}
+      \egroup
+      \egroup;
+    \end{tikzpicture}
+ \end{center}}
+
+% Titel page
+\title{\huge{\textbf{Heading}}}
+\author{\\[0.5cm] Sabarinath N P \emph{(CS10B020)}
+	\\[0.5cm] Department of Computer Science and Engineering \\[0.2cm]
+	IIT Madras\\[1.0cm]
+}
+\date{August 2013}
+
+\begin{document}
+
+\renewcommand{\thesection}{1.\arabic{section}}
+
+\begin{center}
+\begin{Large}
+\textbf{CS6700 - Programming Exercise II}
+\end{Large}
+\vspace{5 mm}
+
+\text {Sabarinath N P (CS10B020)}
+\end{center}
+
+\section{Objective}
+
+To find the optimal policy for herd management problem using dynamic programming techniques. 
+The optimal policy is characterized by the maximum money that can be generated from the given herd.
+
+\section{Problem Description}
+Given a Herd that can accomodate a maximum of 12 cows. There are 3 types of cows, namely,
+\begin{my_itemize}
+ \item young
+ \item breedable
+ \item old
+\end{my_itemize}
+And, given the expected utility and selling price of each type of cow along with the transition probabilities and the offspring probabilities,
+the aim is to determine the optimal action, i.e., the number of cows to sell at each state so the overall money generated over the time is maximized.
+
+\section{Implementation}
+The problem of deriving the optimal policy boils down to calculating the state-to-state transition probability matrices efficiently
+as the dynamic programming methods to derive the optimal actions for each state, is well known \cite{book}.
+States are represented as $\langle s_{young},s_{breedable},s_{old}\rangle$.
+And action or number of cows of each type being sold is represented as $\langle a_{young},a_{breedable},a_{old}\rangle$.
+Each states is given a numerical value in base 13, with number of young cows forming the most significant digit for representation convenience.
+Since the actions are deterministic, for given state and action, an \emph{afterstate} can be defined.
+
+With this representation and the given transition probabilities, the probability of transition from a state (or an afterstate) to another state can be derived as follows,
+\begin{my_itemize}
+ \item \textbf{Evolution step}: Compute the transition probability matrix $PE_{s_{a}s^{''}}$for afterstate $\rightarrow$ evolution\_state, which involves only the transition among types or evolution of cows.
+ In this step, the size of the herd is preserved.
+ \item \textbf{Breeding step}: Compute the transition probabilty matrix $PB_{s^{''}s^{'}}$ for state $\rightarrow$ state, which involves only the production of \emph{young} type cows.
+ In this step, $s_{breedable}$ and  $s_{old}$ remains constant, while the $s_{young}$ increases till the total number of cows in the herd reaches the maximum value of 12.
+ And the sum of probabilities of transitioning to the invalid states, i.e., states with more than 12 cows, 
+ is added to the probability of transitioning to the state $\langle 12-s_{breedable}-s_{old},s_{breedable},s_{old}\rangle$.
+ \item \textbf{Double Transition}: To efficiently compute the transition probability matrix $P_{ss^{'}}$ involving afterstate $\rightarrow$ evolution\_state $\rightarrow$ state,
+ the above two matrices can be multiplied to obtain the required, state (or afterstate) $\rightarrow$ state transition probability matrix.
+ \[ P_{ss^{'}} = P_{s_{a}s^{'}} = PE_{s_{a}s^{''}} * PB_{s^{''}s^{'}} \]
+\end{my_itemize}
+
+Given the afterstate and the next state, reward $R_{ss^{'}}$ for the transition can be computed using state information, utility and payoff values.
+Having computed the required transition probability matrix $P_{ss^{'}}$, the simulation of policy and value iteration is quite straight forward given the algorithms.
+The correctness of the computed probability matrices $M_{ij}$ can verified by checking,
+\[ \mathlarger{\mathlarger{\sum}}_{i=0}^{454} M_{si} = 1\ \ \ \ \ \ \ \forall (s) \in S \]
+
+\section{Simulation}
+
+Given $P_{ss^{'}}$ and $R_{ss{'}}$, the following algorithms which follow dynamic programming paradigm is run for different discount parameters.
+\begin{my_itemize}
+ \item Policy Iteration
+ \item Value Iteration
+\end{my_itemize}
+
+The discount parameter $\gamma$ is varied as [0.3, 0.5, 0.7, 0.9] and the above two methods are run for each value of $\gamma$.
+The convergence parameter $\theta$ is set to $10^{-9}$ for both the methods.
+
+\section{Observation}
+
+The above mentioned algorithms are run and the convergence results are observed.
+It is noted that Policy Iteration takes relatively very less number of iterations to converge for large discount parameter $\gamma$ when compared to Value Iteration.
+The number of iterations taken in each of the simulation is shown in the following table,
+
+\begin{center}
+\captionof{table}{Convergence Measure: $\langle Method, \gamma\rangle$ vs Number of Iterations}
+\vspace{5mm}
+\begin{tabular}{!{\VRule[2pt]}c!{\VRule[2pt]}c!{\VRule[2pt]}c!{\VRule[2pt]}c!{\VRule[2pt]}c!{\VRule[2pt]}c!{\VRule[2pt]}c!}
+\specialrule{2pt}{0pt}{0pt}
+\myalign{!{\VRule[2pt]}c!{\VRule[2pt]}}{\textbf{$\gamma$}} & 
+\myalign{c!{\VRule[2pt]}}{\textbf{$P_{i}$ ($P_{s}$)}} &
+\myalign{c!{\VRule[2pt]}}{\textbf{$V_{s}$}}
+\\\specialrule{2pt}{0pt}{0pt}
+0.3 & 1(2) & 2 \\\hline
+0.5 & 1(2) & 2 \\\hline
+0.7 & 2(52) & 51 \\\hline
+0.9 & 3(221) & 142
+\\\specialrule{2pt}{0pt}{0pt}
+\end{tabular}
+\end{center}
+\vspace{5mm}
+$P_{i}$ is the number of \emph{Policy Improvement} iterations performed. \\
+$P_{s}$ is the number of \emph{Policy Evaluation} sweeps performed. \\
+$V_{s}$ is the number of \emph{Value Iteration} sweeps performed.
+
+Given below the optimal value function $V^{*}(s)$ plot of both the algorithms for different discount parameter $\gamma$.
+\begin{center}
+\centerline{\includegraphics*[width=180mm, height=75mm]{Graph_policy.png}}
+\end{center}
+\begin{center}
+\centerline{\includegraphics*[width=180mm, height=75mm]{Graph_value.png}}
+\end{center}
+From the above two plots, it can be observed that,
+\begin{my_itemize}
+ \item Given the discount parameter, both the methods converge to same optimal value function.
+ \item For $\gamma$=0.3 and $\gamma$=0.5, same optimal value function is obtained in each of the methods.
+ \item $V^{*}(s)$ increases with the $\gamma$ value for both the algorithms.
+\end{my_itemize}
+
+Since both the algorithms converge to the optimal value function $V^{*}$ in single step for $\gamma$=0.3 and $\gamma$=0.5, their plots are ignored.
+Given below the value funtion $V^{k}(s)$ plot after certain number of sweeps in both the algorithms when $\gamma$ is set to 0.7.
+\begin{center}
+\centerline{\includegraphics*[width=180mm, height=80mm]{Graph_Policy_07.png}}
+\end{center}
+\begin{center}
+\centerline{\includegraphics*[width=180mm, height=80mm]{Graph_Value_07.png}}
+\end{center}
+From the above two plots, it can be observed that,
+\begin{my_itemize}
+ \item $V^{k}(s)$ increases with the increase in number of sweeps \emph{k}.
+ \item $V^{10}(s) \approx V^{*}(s)$ in both algorithms.
+\end{my_itemize}
+
+Given below the value funtion $V^{k}(s)$ plot after certain number of sweeps in both the algorithms when $\gamma$ is set to 0.9.
+\begin{center}
+\centerline{\includegraphics*[width=180mm, height=80mm]{Graph_Policy_09.png}}
+\end{center}
+\begin{center}
+\centerline{\includegraphics*[width=180mm, height=80mm]{Graph_Value_09.png}}
+\end{center}
+From the above two plots, it can be observed that,
+\begin{my_itemize}
+ \item $V^{k}(s)$ increases with the increase in number of sweeps \emph{k}.
+ \item Number of sweeps taken to converge to optimal value function increases with $\gamma$ value. 
+\end{my_itemize}
+
+\section{Sample Results}
+
+The optimal next action for the following states in computed using both the algorithms. 
+And it is observed that both the algorithms result into the same optimal next action.
+The following tables enumerates it.
+\begin{center}
+\captionof{table}{Optimal next action}
+\vspace{5mm}
+\begin{tabular}{!{\VRule[2pt]}c!{\VRule[2pt]}c!{\VRule[2pt]}c!{\VRule[2pt]}c!{\VRule[2pt]}c!{\VRule[2pt]}c!{\VRule[2pt]}c!{\VRule[2pt]}c!}
+\specialrule{2pt}{0pt}{0pt}
+\myalign{!{\VRule[2pt]}c!{\VRule[2pt]}}{\textbf{$\gamma$}} & 
+\myalign{c!{\VRule[2pt]}}{\textbf{$State: \langle 4, 7, 1\rangle$)}} &
+\myalign{c!{\VRule[2pt]}}{\textbf{$State: \langle 1, 3, 6\rangle$)}} &
+\myalign{c!{\VRule[2pt]}}{\textbf{$State: \langle 9, 2, 1\rangle$)}}
+\\\specialrule{2pt}{0pt}{0pt}
+0.3 & $\langle 4, 7, 1\rangle$ & $\langle 1, 3, 6\rangle$ & $\langle 9, 2, 1\rangle$ \\\hline
+0.5 & $\langle 4, 7, 1\rangle$ & $\langle 1, 3, 6\rangle$ & $\langle 9, 2, 1\rangle$ \\\hline
+0.7 & $\langle 0, 7, 1\rangle$ & $\langle 0, 3, 6\rangle$ & $\langle 0, 2, 1\rangle$ \\\hline
+0.9 & $\langle 0, 3, 1\rangle$ & $\langle 0, 0, 2\rangle$ & $\langle 0, 1, 1\rangle$
+\\\specialrule{2pt}{0pt}{0pt}
+\end{tabular}
+\end{center}
+\vspace{5mm}
+
+From the plots, we noted that $\gamma$=0.9 results into highest optimal value function.
+Hence, it is better the perform optimal next action as predicted by algorithms when $\gamma$=0.9.
+
+Also, from the above all plots, it can be clearly observed that there is exists a unique state with maximum optimal value.
+That state is $\langle 0, 12, 0\rangle$.
+
+\begin{thebibliography}{1}
+
+  \bibitem{book} Yanwei Song, Raj Parihar {\em DRAM Memory Controller and Optimizations}.
+
+\end{thebibliography}
+
+\end{document}
